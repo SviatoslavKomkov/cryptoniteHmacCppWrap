@@ -7,140 +7,107 @@
 #include "hmac.h"
 #include "mexceptions.h"
 
-#include "cryptonite/c/hmac.h"
 #include "cryptonite/c/byte_array.h"
 #include "cryptonite/c/cryptonite_errors.h"
-#include "cryptonite/c/stacktrace.h"
-#include "cryptonite/c/stacktrace.h"
+#include "cryptonite/c/hmac.h"
 #include "cryptonite/c/macros_internal.h"
+#include "cryptonite/c/stacktrace.h"
 
 #undef FILE_MARKER
 #define FILE_MARKER "hmac.cpp"
 
-using namespace std;
-
 namespace cryptonite {
 
-#define CHECK_CRYPTONITE_ERROR() { \
-    if (ret != RET_OK) { \
-        THROW_EXCEPTION(errorToString()); \
-    } \
+HmacCtx* allocateHmacContext(HashType ht) {
+  HmacCtx *hctx = nullptr;
+
+  switch (ht) {
+  case HashType::MD5:
+    hctx = hmac_alloc_md5();
+    break;
+  case HashType::SHA1:
+    hctx = hmac_alloc_sha1();
+    break;
+  case HashType::SHA2_224:
+    hctx = hmac_alloc_sha2(SHA2_VARIANT_224);
+    break;
+  case HashType::SHA2_256:
+    hctx = hmac_alloc_sha2(SHA2_VARIANT_256);
+    break;
+  case HashType::SHA2_384:
+    hctx = hmac_alloc_sha2(SHA2_VARIANT_384);
+    break;
+  case HashType::SHA2_512:
+    hctx = hmac_alloc_sha2(SHA2_VARIANT_512);
+    break;
+  case HashType::GOST_34311:
+    throw std::runtime_error{"GOST_34311 is  not supported"};
+  default:
+    std::stringstream error;
+    error << "No such hash type: " << static_cast<int>(ht);
+    throw std::invalid_argument{error.str()};
+  }
+
+  if( hctx == nullptr )
+  {
+    throw std::bad_alloc{};
+  }
+
+  return hctx;
 }
 
-    static string errorToString() {
-        const ErrorCtx *ctx = stacktrace_get_last();
-        stringstream ss;
-        const ErrorCtx *step = NULL;
-        if (ctx) {
-            step = ctx;
-            do {
-                ss << step->file << ":" << (unsigned int)step->line <<", error: " << step->error_code;
-                step = step->next;
-            } while (step != NULL);
-        }
-        stacktrace_free_current();
+Hmac::Hmac(HashType ht, const std::vector<uint8_t>& key) {
+  HmacCtx *hctx = allocateHmacContext(ht);
 
-        return ss.str();
-    }
+  std::shared_ptr<ByteArray> keyBa{ 
+    ba_alloc_from_uint8(key.data(), key.size()), 
+    [](auto* data){ 
+      ba_free(data); 
+    } 
+  };
 
-    HMAC::HMAC() {}
+  if (hmac_init(hctx, keyBa.get()) != RET_OK )
+  {
+    throw std::runtime_error{"failed to inialize hmac"};
+  }
 
-    HMAC::HMAC(HashType ht) {
-        HmacCtx *hctx = NULL;
-        int ret(RET_OK);
-        switch (ht) {
-            case HASH_TYPE_MD5: CHECK_NOT_NULL(hctx = hmac_alloc_md5());
-                break;
-            case HASH_TYPE_SHA1: CHECK_NOT_NULL(hctx = hmac_alloc_sha1());
-                break;
-            case HASH_TYPE_SHA2_224: CHECK_NOT_NULL(hctx = hmac_alloc_sha2(SHA2_VARIANT_224));
-                break;
-            case HASH_TYPE_SHA2_256: CHECK_NOT_NULL(hctx = hmac_alloc_sha2(SHA2_VARIANT_256));
-                break;
-            case HASH_TYPE_SHA2_384: CHECK_NOT_NULL(hctx = hmac_alloc_sha2(SHA2_VARIANT_384));
-                break;
-            case HASH_TYPE_SHA2_512: CHECK_NOT_NULL(hctx = hmac_alloc_sha2(SHA2_VARIANT_512));
-                break;
-            case HASH_TYPE_GOST_34311:
-                // sloth
-            THROW_EXCEPTION("GOST_34311 not supported")
-            default: THROW_EXCEPTION("No such hash type: " << ht);
-        }
-
-        cleanup:
-        CHECK_CRYPTONITE_ERROR()
-        this->ctx = hctx;
-    }
-
-    shared_ptr<HMAC> HMAC::init(HashType ht, const std::vector<uint8_t> &key) {
-        ByteArray *keyBa = NULL;
-        HMAC *ctx = nullptr;;
-        int ret(RET_OK);
-        HmacCtx* hctx = NULL;
-
-        CHECK_NOT_NULL(ctx = new HMAC(ht));
-        CHECK_NOT_NULL(keyBa = ba_alloc_from_uint8(key.data(), key.size()));
-        hctx = (HmacCtx*)ctx->ctx;
-        DO(hmac_init(hctx, keyBa));
-
-        cleanup:
-        ba_free(keyBa);
-        if (ret != RET_OK) {
-            delete ctx;
-            THROW_EXCEPTION(errorToString());
-        }
-
-        return std::shared_ptr<HMAC>(ctx);;
-    }
-
-    void HMAC::update(const std::vector<uint8_t> &data) {
-        ByteArray * dataBa = NULL;
-        int ret(RET_OK);
-        HmacCtx *ctx = (HmacCtx *) this->ctx;
-
-        CHECK_NOT_NULL(dataBa = ba_alloc_from_uint8(data.data(), data.size()));
-        DO(hmac_update(ctx, dataBa));
-        cleanup:
-        ba_free(dataBa);
-        CHECK_CRYPTONITE_ERROR()
-    }
-
-    std::vector<uint8_t> HMAC::finale() {
-        ByteArray * hashBa = NULL;
-        const uint8_t *buf = NULL;
-        size_t bufLen = 0;
-        std::vector<uint8_t> hash;
-        int ret(RET_OK);
-
-        DO(hmac_final((HmacCtx *) this->ctx, &hashBa));
-
-        buf = ba_get_buf(hashBa);
-        bufLen = ba_get_len(hashBa);
-
-        hash = std::vector<uint8_t>(buf, buf + bufLen);
-
-        cleanup:
-        ba_free(hashBa);
-        CHECK_CRYPTONITE_ERROR()
-
-        return hash;
-    }
-
-    HMAC::~HMAC() {
-        if (this->ctx != NULL) {
-            hmac_free((HmacCtx*)this->ctx);
-        }
-        stacktrace_free_current();
-        this->ctx = NULL;
-    }
-
-    std::vector<uint8_t> hmacCore(HashType ht, const std::vector<uint8_t> &key, const std::vector<uint8_t> &data) {
-        vector<uint8_t> hash;
-        shared_ptr<HMAC> ctx = HMAC::init(ht, key);
-
-        DOC(ctx->update(data));
-        DOC(hash = ctx->finale());
-
-        return hash;
-    }
+  this->ctx = hctx;
 }
+
+Hmac::~Hmac() {
+  hmac_free((HmacCtx *)this->ctx);
+  stacktrace_free_current();
+  this->ctx = nullptr;
+}
+
+int Hmac::update(const std::vector<uint8_t>& data) {
+  std::shared_ptr<ByteArray> dataBa{ 
+    ba_alloc_from_uint8(data.data(), data.size()), 
+    [](auto* data) { 
+      ba_free(data);
+    } 
+  };
+
+  return hmac_update((HmacCtx *)this->ctx, dataBa.get());
+}
+
+std::vector<uint8_t> Hmac::finale() {
+  ByteArray* hashBa = nullptr;
+  std::shared_ptr<ByteArray> wrapper{ 
+    hashBa, 
+    [](auto* data) { 
+      ba_free(data);
+    } 
+  };
+
+  if (hmac_final((HmacCtx *)this->ctx, &hashBa) != RET_OK)
+  {
+    throw std::runtime_error{"failed to finalize hmac"};
+  }
+
+  const uint8_t* buffer = ba_get_buf(hashBa);
+  const std::size_t length = ba_get_len(hashBa);
+
+  return std::vector<uint8_t>{buffer, buffer + length};
+}
+} // namespace cryptonite

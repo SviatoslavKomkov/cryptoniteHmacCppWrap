@@ -710,7 +710,7 @@ int dstu7564_init_kmac(Dstu7564Ctx *ctx, const ByteArray *key, size_t mac_len)
     CHECK_PARAM(key != NULL);
     CHECK_PARAM(mac_len == 32 || mac_len == 48 || mac_len == 64);
 
-    /*HMAC(M,K) = H(PAD(K) || PAD(M) || (~K))*/
+    /*Hmac(M,K) = H(PAD(K) || PAD(M) || (~K))*/
     DO(dstu7564_init(ctx, mac_len));
 
     CALLOC_CHECKED(ctx->hmac, sizeof(Dstu7564Hmac));

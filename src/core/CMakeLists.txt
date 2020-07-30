@@ -1,6 +1,6 @@
 include_directories(cpp)
 
-file(GLOB HMAC_SOURCE cpp/*.cpp)
+file(GLOB SOURCES cpp/*.cpp)
 
-add_library(cryptoniteWrap STATIC ${HMAC_SOURCE})
-target_link_libraries(cryptoniteWrap cryptonite pthread)
+add_library(hmacpp STATIC ${SOURCES})
+target_link_libraries(hmacpp cryptonite pthread)

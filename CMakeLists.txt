@@ -1,15 +1,17 @@
 cmake_minimum_required(VERSION 3.05)
-project(hmacWraper)
+project(cryptonite-hmacpp)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-DCRYPTONITE_EXPORT=extern)
 
 include_directories(
-        src/
-        src/core/cpp/
-        )
-add_subdirectory(src/)
+        src
+        src/core/cpp
+)
+add_subdirectory(src/core)
+add_subdirectory(src/cryptonite)
+add_subdirectory(src/tests)
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
         add_definitions(-DNDEBUG)
