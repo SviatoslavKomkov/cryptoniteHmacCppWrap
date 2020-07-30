@@ -20,47 +20,47 @@ extern "C" {
 typedef struct HmacCtx_st HmacCtx;
 
 /**
- * Створює контекст HMAC на базі ГОСТ 34.311 зі стандартним sbox.
+ * Створює контекст Hmac на базі ГОСТ 34.311 зі стандартним sbox.
  *
  * @param sbox_id ідентифікатор стандартної таблиці замін
  * @param sync синхропосилка
- * @return контекст HMAC
+ * @return контекст Hmac
  */
 CRYPTONITE_EXPORT HmacCtx *hmac_alloc_gost34_311(Gost28147SboxId sbox_id, const ByteArray *sync);
 
 /**
- * Створює контекст HMAC на базі ГОСТ 34.311 зі стандартним sbox.
+ * Створює контекст Hmac на базі ГОСТ 34.311 зі стандартним sbox.
  *
  * @param sbox користувацький sbox
  * @param sync синхропосилка
- * @return контекст HMAC
+ * @return контекст Hmac
  */
 CRYPTONITE_EXPORT HmacCtx *hmac_alloc_gost34_311_user_sbox(const ByteArray *sbox, const ByteArray *sync);
 
 /**
- * Створює контекст HMAC на базі SHA1.
+ * Створює контекст Hmac на базі SHA1.
  *
- * @return контекст HMAC
+ * @return контекст Hmac
  */
 CRYPTONITE_EXPORT HmacCtx *hmac_alloc_sha1(void);
 
 /**
- * Створює контекст HMAC на базі SHA2.
+ * Створює контекст Hmac на базі SHA2.
  *
  * @param variant тип геша
- * @return контекст HMAC
+ * @return контекст Hmac
  */
 CRYPTONITE_EXPORT HmacCtx *hmac_alloc_sha2(Sha2Variant variant);
 
 /**
- * Створює контекст HMAC на базі MD5.
+ * Створює контекст Hmac на базі MD5.
  *
- * @return контекст HMAC
+ * @return контекст Hmac
  */
 CRYPTONITE_EXPORT HmacCtx *hmac_alloc_md5(void);
 
 /**
- * Ініціалізує контекст для виробки HMAC.
+ * Ініціалізує контекст для виробки Hmac.
  *
  * @param ctx контекст
  * @param key секретний ключ
