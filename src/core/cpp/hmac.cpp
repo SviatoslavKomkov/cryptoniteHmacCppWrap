@@ -59,11 +59,11 @@ HmacCtx* allocateHmacContext(HashType ht) {
 Hmac::Hmac(HashType ht, const std::vector<uint8_t>& key) {
   HmacCtx *hctx = allocateHmacContext(ht);
 
-  std::shared_ptr<ByteArray> keyBa{ 
-    ba_alloc_from_uint8(key.data(), key.size()), 
-    [](auto* data){ 
-      ba_free(data); 
-    } 
+  std::shared_ptr<ByteArray> keyBa{
+    ba_alloc_from_uint8(key.data(), key.size()),
+    [](auto* data){
+      ba_free(data);
+    }
   };
 
   if (hmac_init(hctx, keyBa.get()) != RET_OK )
@@ -81,11 +81,11 @@ Hmac::~Hmac() {
 }
 
 int Hmac::update(const std::vector<uint8_t>& data) {
-  std::shared_ptr<ByteArray> dataBa{ 
-    ba_alloc_from_uint8(data.data(), data.size()), 
-    [](auto* data) { 
+  std::shared_ptr<ByteArray> dataBa{
+    ba_alloc_from_uint8(data.data(), data.size()),
+    [](auto* data) {
       ba_free(data);
-    } 
+    }
   };
 
   return hmac_update((HmacCtx *)this->ctx, dataBa.get());
@@ -93,17 +93,17 @@ int Hmac::update(const std::vector<uint8_t>& data) {
 
 std::vector<uint8_t> Hmac::finale() {
   ByteArray* hashBa = nullptr;
-  std::shared_ptr<ByteArray> wrapper{ 
-    hashBa, 
-    [](auto* data) { 
-      ba_free(data);
-    } 
-  };
 
   if (hmac_final((HmacCtx *)this->ctx, &hashBa) != RET_OK)
   {
     throw std::runtime_error{"failed to finalize hmac"};
   }
+  std::shared_ptr<ByteArray> wrapper{
+            hashBa,
+            [](auto *data) {
+                ba_free(data);
+            }
+   };
 
   const uint8_t* buffer = ba_get_buf(hashBa);
   const std::size_t length = ba_get_len(hashBa);
